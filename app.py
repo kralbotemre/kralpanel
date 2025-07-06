@@ -30,23 +30,38 @@ def get_binance_klines(symbol, interval, limit=150):
     return df
 
 def signal_1h(df):
+    # İndikatörleri hesapla
     rsi = ta.rsi(df['close'], length=14)
     stoch = ta.stoch(df['high'], df['low'], df['close'])
     volume = df['volume'].rolling(10).mean()
     qqe = ta.qqe(df['close'])
+
+    # İndikatörlerin boş gelme ihtimaline karşı kontrol et
+    if rsi is None or stoch is None or qqe is None or volume is None:
+        return "Veri yetersiz, analiz yapılamadı.", "nötr"
+    if rsi.empty or stoch.empty or qqe.empty or volume.empty:
+        return "Veri yetersiz, analiz yapılamadı.", "nötr"
+
+    # Değerleri güvenle al
     last_rsi = rsi.iloc[-1]
     last_stoch = stoch['STOCHk_14_3_3'].iloc[-1]
-    last_qqe = qqe['QQE_14_5.0'].iloc[-1] if 'QQE_14_5.0' in qqe else 50
+    last_qqe = qqe['QQE_14_5.0'].iloc[-1] if 'QQE_14_5.0' in qqe.columns else 50
+    
     shorts = 0
     longs = 0
+    
     if last_rsi < 45: shorts += 1
     elif last_rsi > 60: longs += 1
+    
     if last_stoch < 30: shorts += 1
     elif last_stoch > 70: longs += 1
+    
     if volume.iloc[-1] < volume.iloc[-10]: shorts += 1
     else: longs += 1
+    
     if last_qqe < 50: shorts += 1
     elif last_qqe > 60: longs += 1
+    
     if shorts >= 2: return "Short ağırlık, satış baskısı.", "short"
     elif longs >= 2: return "Long yönü güçlü, alış momentumu.", "long"
     else: return "Yön belirsiz, izlemekte fayda var.", "nötr"
