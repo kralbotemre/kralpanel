@@ -3,3 +3,4 @@ pandas
 pandas-ta==0.3.14b
 requests
 setuptools
+numpy<2.0
